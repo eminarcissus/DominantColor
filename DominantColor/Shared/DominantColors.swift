@@ -163,7 +163,7 @@ public func dominantColorsWithSizeInImage(
     accuracy: GroupingAccuracy = DefaultParameterValues.accuracy,
     seed: UInt64 = DefaultParameterValues.seed,
     memoizeConversions: Bool = DefaultParameterValues.memoizeConversions
-    ) -> [(CGColor,Int)] {
+    ) -> (Int,[(CGColor,Int)]) {
     
     let (width, height) = (image.width, image.height)
     let (scaledWidth, scaledHeight) = scaledDimensionsForPixelLimit(maxSampledPixels, width: width, height: height)
@@ -195,8 +195,9 @@ public func dominantColorsWithSizeInImage(
     // Sort the clusters by size in descending order so that the
     // most dominant colors come first.
     clusters.sort { $0.size > $1.size }
+    let total_size = clusters.reduce(0, {(result,x) in result+x.size})
     
-    return clusters.map { (RGBVectorToCGColor(IN_LABToRGB($0.centroid)),$0.size) }
+    return (total_size,clusters.map { (RGBVectorToCGColor(IN_LABToRGB($0.centroid)),$0.size) })
 }
 
 private func distanceForAccuracy(_ accuracy: GroupingAccuracy) -> (GLKVector3, GLKVector3) -> Float {

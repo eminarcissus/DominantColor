@@ -87,12 +87,12 @@ public extension UIImage {
         accuracy: GroupingAccuracy = DefaultParameterValues.accuracy,
         seed: UInt64 = DefaultParameterValues.seed,
         memoizeConversions: Bool = DefaultParameterValues.memoizeConversions
-        ) -> [(UIColor,Int)] {
+        ) -> (Int,[(UIColor,Int)]) {
         if let CGImage = self.cgImage {
-            let colors = dominantColorsWithSizeInImage(CGImage, maxSampledPixels: maxSampledPixels, accuracy: accuracy, seed: seed, memoizeConversions: memoizeConversions)
-            return colors.map { (color,size) in (UIColor(cgColor: color),size) }
+            let (ts,colors) = dominantColorsWithSizeInImage(CGImage, maxSampledPixels: maxSampledPixels, accuracy: accuracy, seed: seed, memoizeConversions: memoizeConversions)
+            return (ts,colors.map { (color,size) in (UIColor(cgColor: color),size) })
         } else {
-            return []
+            return (0,[])
         }
     }
 }
