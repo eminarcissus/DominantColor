@@ -81,6 +81,20 @@ public extension UIImage {
             return []
         }
     }
+    
+    public func dominantColorWithSize(
+        _ maxSampledPixels: Int = DefaultParameterValues.maxSampledPixels,
+        accuracy: GroupingAccuracy = DefaultParameterValues.accuracy,
+        seed: UInt64 = DefaultParameterValues.seed,
+        memoizeConversions: Bool = DefaultParameterValues.memoizeConversions
+        ) -> [(UIColor,Int)] {
+        if let CGImage = self.cgImage {
+            let colors = dominantColorsWithSizeInImage(CGImage, maxSampledPixels: maxSampledPixels, accuracy: accuracy, seed: seed, memoizeConversions: memoizeConversions)
+            return colors.map { (color,size) in (UIColor(cgColor: color),size) }
+        } else {
+            return []
+        }
+    }
 }
 
 #endif

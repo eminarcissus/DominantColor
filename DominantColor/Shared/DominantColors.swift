@@ -157,6 +157,48 @@ public func dominantColorsInImage(
     return clusters.map { RGBVectorToCGColor(IN_LABToRGB($0.centroid)) }
 }
 
+public func dominantColorsWithSizeInImage(
+    _ image: CGImage,
+    maxSampledPixels: Int = DefaultParameterValues.maxSampledPixels,
+    accuracy: GroupingAccuracy = DefaultParameterValues.accuracy,
+    seed: UInt64 = DefaultParameterValues.seed,
+    memoizeConversions: Bool = DefaultParameterValues.memoizeConversions
+    ) -> [(CGColor,Int)] {
+    
+    let (width, height) = (image.width, image.height)
+    let (scaledWidth, scaledHeight) = scaledDimensionsForPixelLimit(maxSampledPixels, width: width, height: height)
+    
+    // Downsample the image if necessary, so that the total number of
+    // pixels sampled does not exceed the specified maximum.
+    let context = createRGBAContext(scaledWidth, height: scaledHeight)
+    context.draw(image, in: CGRect(x: 0, y: 0, width: Int(scaledWidth), height: Int(scaledHeight)))
+    
+    // Get the RGB colors from the bitmap context, ignoring any pixels
+    // that have alpha transparency.
+    // Also convert the colors to the LAB color space
+    var labValues = [GLKVector3]()
+    labValues.reserveCapacity(Int(scaledWidth * scaledHeight))
+    
+    let RGBToLAB: (RGBAPixel) -> GLKVector3 = {
+        let f: (RGBAPixel) -> GLKVector3 = { IN_RGBToLAB($0.toRGBVector()) }
+        return memoizeConversions ? memoize(f) : f
+    }()
+    enumerateRGBAContext(context) { (_, _, pixel) in
+        if pixel.a == UInt8.max {
+            labValues.append(RGBToLAB(pixel))
+        }
+    }
+    // Cluster the colors using the k-means algorithm
+    let k = selectKForElements(labValues)
+    var clusters = kmeans(labValues, k: k, seed: seed, distance: distanceForAccuracy(accuracy))
+    
+    // Sort the clusters by size in descending order so that the
+    // most dominant colors come first.
+    clusters.sort { $0.size > $1.size }
+    
+    return clusters.map { (RGBVectorToCGColor(IN_LABToRGB($0.centroid)),$0.size) }
+}
+
 private func distanceForAccuracy(_ accuracy: GroupingAccuracy) -> (GLKVector3, GLKVector3) -> Float {
     switch accuracy {
     case .low:
